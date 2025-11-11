@@ -1,53 +1,43 @@
-import "dotenv/config.js";
 import express from "express";
 import cors from "cors";
-import { WebSocketServer } from "ws";
-import http from "http";
-
+import dotenv from "dotenv";
 import apiRouter from "./routes/api.js";
-import { aggregateOnce } from "./services/aggregator.js";
-import { setTokens, getTokens } from "./utils/cache.js";
 
-const PORT = Number(process.env.PORT || 8080);
-const POLL_MS = Number(process.env.POLL_MS || 30000);
+dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// REST routes
+// mount API under /api
 app.use("/api", apiRouter);
 
-// basic homepage
+// simple health check
 app.get("/", (_req, res) => {
-  res.type("text/plain").send("Real-time Data Aggregation Service is running.\nUse /api/health or /api/tokens");
+  res.send("OK");
 });
 
-// HTTP server + WebSocket server
-const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
+const PORT = process.env.PORT || 8080;
 
-function broadcastWS(obj) {
-  const msg = JSON.stringify(obj);
-  wss.clients.forEach(client => {
-    if (client.readyState === 1) client.send(msg);
-  });
-}
+// ----- Background polling every N ms -----
+import { getSnapshot } from "./services/aggregator.js";
 
-// polling loop to refresh cache and notify WS
-async function poll() {
+const POLL_MS = Number(process.env.DATA_REFRESH_INTERVAL || 30000);
+
+async function refreshLoop() {
   try {
-    const items = await aggregateOnce();
-    setTokens(items);
-    broadcastWS({ type: "tokens:update", ...getTokens() });
-    console.log(`[poll] updated ${items.length} items @ ${new Date().toISOString()}`);
+    const snap = await getSnapshot();
+    console.log(`[poll] refreshed at ${snap.updatedAt}, items=${snap.items.length}`);
   } catch (err) {
-    console.error("poll error:", err?.message ?? err);
+    console.error("[poll] refresh failed:", err?.message || err);
   }
 }
 
-server.listen(PORT, async () => {
-  console.log(`➜ http://localhost:${PORT}`);
-  await poll();               // fetch immediately
-  setInterval(poll, POLL_MS); // then every 30s (from .env)
+// start immediately, then repeat
+refreshLoop();
+setInterval(refreshLoop, POLL_MS);
+
+
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
 });

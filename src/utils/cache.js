@@ -1,14 +1,10 @@
-// Very small in-memory cache with timestamp
-const cache = {
-  tokens: [],        // normalized array we’ll serve to clients
-  lastUpdated: 0     // ms epoch
-};
+// ultra-simple in-memory cache for the latest snapshot
+let _cache = { updatedAt: null, items: [] };
 
-export function getTokens() {
-  return { items: cache.tokens, lastUpdated: cache.lastUpdated };
+export function setCache(snapshot) {
+  _cache = { ...snapshot };
 }
 
-export function setTokens(tokens) {
-  cache.tokens = tokens;
-  cache.lastUpdated = Date.now();
+export function getCache() {
+  return _cache;
 }
