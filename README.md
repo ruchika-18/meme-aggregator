@@ -9,3 +9,15 @@ This is a small backend service that fetches token data from public APIs, merges
 ```bash
 npm install
 npm run dev
+
+
+##  Screenshots
+
+**Health Endpoint**
+![Health](./screens/health.png)
+
+**Tokens Page 1**
+![Tokens Page 1](./screens/tokens-page1.png)
+
+**Tokens Sorted by Price**
+![Tokens Sorted by Price](./screens/tokens-price-desc.png)
