@@ -6,7 +6,8 @@ This is a small backend service that fetches token data from public APIs, merges
 
 ## 🔗 How to Run (Locally)
 
-```bash
+
+
 npm install
 npm run dev
 
